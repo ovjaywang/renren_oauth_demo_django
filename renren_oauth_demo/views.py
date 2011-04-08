@@ -38,7 +38,7 @@ renren's JavaScript SDK for login. It also accesses the RenRen API
 directly using the Python SDK. It is designed to illustrate how easy
 it is to use the renren Platform without any third party code.
 
-Befor runing the demo, you have to register a RenRen Application and
+Before runing the demo, you have to register a RenRen Application and
 modify the root domain.  e.g. If you specify the redirect_uri as
 "http://www.example.com/example_uri". The root domain must be
 "example.com"
@@ -136,11 +136,11 @@ def home(request):
 
 
 def login(request):
-    verification_code = request.GET.get("code", None)
     args = dict(client_id=RENREN_APP_API_KEY,
                 redirect_uri=request.build_absolute_uri(request.path))
 
     error = request.GET.get("error", None)
+    verification_code = request.GET.get("code", None)
 
     if error:
         args["error"] = error
@@ -229,9 +229,7 @@ class RenRenAPIClient(object):
         self.secret_key = secret_key
 
     def request(self, params=None):
-        """Fetches the given method's response returning from RenRen API.
-
-        Send a POST request to the given method with the given params.
+        """Request Renren API server with the given params.
         """
         params["api_key"] = self.api_key
         params["call_id"] = str(int(time.time() * 1000))
@@ -243,13 +241,13 @@ class RenRenAPIClient(object):
 
         post_data = None if params is None else urllib.urlencode(params)
 
-        file = urllib.urlopen(RENREN_API_SERVER, post_data)
+        fileobj = urllib.urlopen(RENREN_API_SERVER, post_data)
 
         try:
-            s = file.read()
+            s = fileobj.read()
             response = json.loads(s)
         finally:
-            file.close()
+            fileobj.close()
         if type(response) is not list and response["error_code"]:
             raise RenRenAPIError(response["error_code"], response["error_msg"])
         return response
