@@ -13,6 +13,7 @@ from functools import wraps
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.utils import simplejson as json
+from django.utils.encoding import smart_str
 
 from models import User
 
@@ -157,12 +158,12 @@ def login(request):
         response = urllib.urlopen(RENREN_ACCESS_TOKEN_URI + "?" + urllib.urlencode(args)).read()
         access_token = json.loads(response)["access_token"]
 
-        '''Obtain session key from the Resource Service.'''
+        # Obtain session key
         session_key_request_args = {"oauth_token": access_token}
         response = urllib.urlopen(RENREN_SESSION_KEY_URI + "?" + urllib.urlencode(session_key_request_args)).read()
         session_key = str(json.loads(response)["renren_token"]["session_key"])
 
-        '''Requesting the Renren API Server obtain the user's base info.'''
+        # Obtain the user's base info
         params = {"method": "users.getInfo", "fields": "name,tinyurl"}
         api_client = RenRenAPIClient(session_key, RENREN_APP_API_KEY, RENREN_APP_SECRET_KEY)
         response = api_client.request(params)
@@ -203,6 +204,22 @@ def logout(request):
     response = HttpResponseRedirect('/')
     _set_cookie(response, "renren_user", "", expires=time.time() - 86400)
     return response
+
+
+@inject_current_user
+@login_required
+def new_status(request):
+    # Obtain session key
+    session_key_request_args = {"oauth_token": request.current_user.access_token}
+    response = urllib.urlopen(RENREN_SESSION_KEY_URI + "?" + urllib.urlencode(session_key_request_args)).read()
+    session_key = str(json.loads(response)["renren_token"]["session_key"])
+
+    # Post a status
+    params = {"method": "status.set", "status": smart_str(u"OAuth 2.0 脚本发布测试.")}
+    api_client = RenRenAPIClient(session_key, RENREN_APP_API_KEY, RENREN_APP_SECRET_KEY)
+    response = api_client.request(params)
+
+    return HttpResponse(response)
 
 
 class RenRenAPIClient(object):

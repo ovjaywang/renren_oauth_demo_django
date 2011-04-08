@@ -9,4 +9,5 @@ dist
 _mailinglist
 .tox
 *~
+*.sqlite3
 
