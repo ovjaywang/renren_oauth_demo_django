@@ -1,0 +1,6 @@
+File: README  -*- Encoding: utf-8 -*-
+
+人人网 OAuth 2.0 认证的 Django 示例.
+
+更多信息:
+1. [Web站点中使用人人OAuth2.0实例讲解](http://wiki.dev.renren.com/wiki/Web%E7%AB%99%E7%82%B9%E4%B8%AD%E4%BD%BF%E7%94%A8%E4%BA%BA%E4%BA%BAOAuth2.0%E5%AE%9E%E4%BE%8B%E8%AE%B2%E8%A7%A3)
