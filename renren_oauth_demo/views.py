@@ -5,7 +5,6 @@ import Cookie
 import email
 import hashlib
 import hmac
-import os
 import time
 import urllib
 from functools import wraps
@@ -15,7 +14,12 @@ from django.shortcuts import render_to_response
 from django.utils import simplejson as json
 from django.utils.encoding import smart_str
 
-from models import User
+from django.conf import settings
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
+
+from models import Profile
 
 # Copyright 2010 RenRen
 #
@@ -44,99 +48,18 @@ modify the root domain.  e.g. If you specify the redirect_uri as
 "example.com"
 """
 
-RENREN_APP_API_KEY = "fee11992a4ac4caabfca7800d233f814"
-RENREN_APP_SECRET_KEY = "a617e78710454b12aab68576382e8e14"
-
-
 RENREN_AUTHORIZATION_URI = "http://graph.renren.com/oauth/authorize"
 RENREN_ACCESS_TOKEN_URI = "http://graph.renren.com/oauth/token"
 RENREN_SESSION_KEY_URI = "http://graph.renren.com/renren_api/session_key"
 RENREN_API_SERVER = "http://api.renren.com/restserver.do"
 
 
-def _set_cookie(response, name, value, domain=None, path="/", expires=None):
-    """Generates and signs a cookie for the give name/value"""
-    timestamp = str(int(time.time()))
-    value = base64.b64encode(value)
-    signature = _cookie_signature(value, timestamp)
-    cookie = Cookie.BaseCookie()
-    cookie[name] = "|".join([value, timestamp, signature])
-    cookie[name]["path"] = path
-    if domain:
-        cookie[name]["domain"] = domain
-    if expires:
-        cookie[name]["expires"] = email.utils.formatdate(
-            expires, localtime=False, usegmt=True)
-    response['Set-Cookie'] = cookie.output()[12:]
-
-
-def _parse_cookie(value):
-    """Parses and verifies a cookie value from set_cookie"""
-    if not value:
-        return
-
-    parts = value.split("|")
-    if len(parts) != 3:
-        return
-
-    if _cookie_signature(parts[0], parts[1]) != parts[2]:
-        return
-
-    timestamp = int(parts[1])
-    if timestamp < time.time() - 30 * 86400:
-        return
-
-    try:
-        return base64.b64decode(parts[0]).strip()
-    except:
-        return
-
-
-def _cookie_signature(*parts):
-    """Generates a cookie signature.
-
-    We use the renren app secret since it is different for every app (so
-    people using this example don't accidentally all use the same secret).
-    """
-    hash = hmac.new(RENREN_APP_SECRET_KEY, digestmod=hashlib.sha1)
-    for part in parts:
-        hash.update(part)
-    return hash.hexdigest()
-
-
-def inject_current_user(f):
-    @wraps(f)
-    def decorated_function(request, *args, **kwargs):
-        if not hasattr(request, 'current_user'):
-            user_id = _parse_cookie(request.COOKIES.get("renren_user"))
-            if user_id:
-                try:
-                    current_user = User.objects.get(user_id=user_id)
-                    setattr(request, 'current_user', current_user)
-                except User.DoesNotExist:
-                    setattr(request, 'current_user', None)
-            else:
-                setattr(request, 'current_user', None)
-        return f(request, *args, **kwargs)
-    return decorated_function
-
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(request, *args, **kwargs):
-        if request.current_user is None:
-            return HttpResponseRedirect('/')
-        return f(request, *args, **kwargs)
-    return decorated_function
-
-
-@inject_current_user
 def home(request):
-    return render_to_response("home.html", {'current_user': request.current_user})
+    return render_to_response("home.html", {'user': request.user})
 
 
-def login(request):
-    args = dict(client_id=RENREN_APP_API_KEY,
+def renren_login(request):
+    args = dict(client_id=settings.RENREN_APP_API_KEY,
                 redirect_uri=request.build_absolute_uri(request.path))
 
     error = request.GET.get("error", None)
@@ -152,7 +75,7 @@ def login(request):
         scope = request.GET.get("scope", None)
         scope_array = str(scope).split("[\\s,+]")
         response_state = request.GET.get("state", None)
-        args["client_secret"] = RENREN_APP_SECRET_KEY
+        args["client_secret"] = settings.RENREN_APP_SECRET_KEY
         args["code"] = verification_code
         args["grant_type"] = "authorization_code"
         response = urllib.urlopen(RENREN_ACCESS_TOKEN_URI + "?" + urllib.urlencode(args)).read()
@@ -165,7 +88,7 @@ def login(request):
 
         # Obtain the user's base info
         params = {"method": "users.getInfo", "fields": "name,tinyurl"}
-        api_client = RenRenAPIClient(session_key, RENREN_APP_API_KEY, RENREN_APP_SECRET_KEY)
+        api_client = RenRenAPIClient(session_key, settings.RENREN_APP_API_KEY, settings.RENREN_APP_SECRET_KEY)
         response = api_client.request(params)
 
         if type(response) is list:
@@ -176,21 +99,22 @@ def login(request):
         avatar = response["tinyurl"]
 
         try:
-            user = User.objects.get(user_id=user_id)
+            user = User.objects.get(username=user_id)
         except User.DoesNotExist:
-            user = User()
+            user = User.objects.create_user(user_id, '%s@renren.com' % user_id, access_token)
 
-        user.user_id = user_id
-        user.name = name
-        user.avatar = avatar
-        user.access_token = access_token
+            profile = Profile()
+            profile.user = user
+            profile.name = name
+            profile.avatar = avatar
+            profile.access_token = access_token
+            profile.save()
 
-        user.save()
-
-        response = HttpResponseRedirect('/')
-        _set_cookie(response, 'renren_user', str(user_id),
-                    expires=time.time() + 30 * 86400)
-        return response
+        # Authenticate the user and log them in using Django's pre-built
+        # functions for these things.
+        user = authenticate(username=user_id, password=access_token)
+        login(request, user)
+        return HttpResponseRedirect('/')
     else:
         args["response_type"] = "code"
         args["scope"] = "publish_feed email status_update"
@@ -198,15 +122,12 @@ def login(request):
         return HttpResponseRedirect(RENREN_AUTHORIZATION_URI + "?" + urllib.urlencode(args))
 
 
-@inject_current_user
 @login_required
-def logout(request):
-    response = HttpResponseRedirect('/')
-    _set_cookie(response, "renren_user", "", expires=time.time() - 86400)
-    return response
+def renren_logout(request):
+    logout(request)
+    return HttpResponseRedirect('/')
 
 
-@inject_current_user
 @login_required
 def new_status(request):
     # Obtain session key
@@ -216,7 +137,7 @@ def new_status(request):
 
     # Post a status
     params = {"method": "status.set", "status": smart_str(u"OAuth 2.0 脚本发布测试.")}
-    api_client = RenRenAPIClient(session_key, RENREN_APP_API_KEY, RENREN_APP_SECRET_KEY)
+    api_client = RenRenAPIClient(session_key, settings.RENREN_APP_API_KEY, settings.RENREN_APP_SECRET_KEY)
     response = api_client.request(params)
 
     return HttpResponse(response)

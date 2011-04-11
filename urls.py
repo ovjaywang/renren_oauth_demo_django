@@ -6,8 +6,8 @@ from django.conf.urls.defaults import patterns, include, url
 
 urlpatterns = patterns('',
     url(r'^$', 'renren_oauth_demo.views.home', name='home'),
-    url(r'^auth/login$', 'renren_oauth_demo.views.login', name='login'),
-    url(r'^auth/logout$', 'renren_oauth_demo.views.logout', name='logout'),
+    url(r'^login/?$', 'renren_oauth_demo.views.renren_login', name='login'),
+    url(r'^logout/?$', 'renren_oauth_demo.views.renren_logout', name='logout'),
 
     url(r'^status/new$', 'renren_oauth_demo.views.new_status', name='new_status'),
 

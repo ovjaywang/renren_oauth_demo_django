@@ -1,11 +1,12 @@
 # File: models.py -*- Encoding: utf-8 -*-
 
 from django.db import models
+from django.contrib.auth.models import User
 
 
-class User(models.Model):
-    user_id = models.CharField(u'ID', max_length=100)
-    name = models.CharField(u'Name', max_length=100)
+class Profile(models.Model):
+    user = models.ForeignKey(User)
+    name = models.CharField(u'Name', max_length=40)
     avatar = models.CharField(u'Avatar', max_length=200)
     access_token = models.CharField(u'Access Token', max_length=200)
 

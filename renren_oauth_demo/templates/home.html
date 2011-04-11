@@ -2,22 +2,22 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <title>RenRen OAuth Example</title>
 
-  {% if current_user %}
+  {% if user.is_authenticated %}
   <p>
-      <a target="_blank" href="http://www.renren.com/profile?id={{ current_user.id }}"><img src="{{current_user.avatar}}" alt="首页" /></a>
+      <a target="_blank" href="http://www.renren.com/profile?id={{ user.username }}"><img src="{{user.get_profile.avatar }}" alt="首页" /></a>
   </p>
   <p>
-      You are logged in as <a target="_blank" href="http://www.renren.com/profile?id={{ current_user.user_id }}">{{ current_user.name }}</a>
+      You are logged in as <a target="_blank" href="http://www.renren.com/profile?id={{ user.username }}">{{ user.get_profile.name }}</a>
   </p>
   <p>
-      <a href="/auth/logout">Log out</a>
+      <a href="/logout">Log out</a>
   </p>
   {% else %}
   <p>
       You are not yet logged into this site.
   </p>
   <p>
-      <a href="/auth/login">Log in with RenRen</a>
+      <a href="/login">Log in with RenRen</a>
   </p>
   {% endif %}
 </html>

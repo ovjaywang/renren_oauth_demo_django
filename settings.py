@@ -111,12 +111,12 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
-    # 'django.contrib.auth',
-    # 'django.contrib.contenttypes',
-    # 'django.contrib.sessions',
-    # 'django.contrib.sites',
-    # 'django.contrib.messages',
-    # 'django.contrib.staticfiles',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.sites',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
@@ -146,3 +146,10 @@ LOGGING = {
         },
     }
 }
+
+
+LOGIN_URL = '/login/'
+AUTH_PROFILE_MODULE = 'renren_oauth_demo.Profile'
+
+RENREN_APP_API_KEY = "fee11992a4ac4caabfca7800d233f814"
+RENREN_APP_SECRET_KEY = "a617e78710454b12aab68576382e8e14"
