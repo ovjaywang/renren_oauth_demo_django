@@ -131,7 +131,7 @@ def renren_logout(request):
 @login_required
 def new_status(request):
     # Obtain session key
-    session_key_request_args = {"oauth_token": request.current_user.access_token}
+    session_key_request_args = {"oauth_token": request.user.get_profile().access_token}
     response = urllib.urlopen(RENREN_SESSION_KEY_URI + "?" + urllib.urlencode(session_key_request_args)).read()
     session_key = str(json.loads(response)["renren_token"]["session_key"])
 
