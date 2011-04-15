@@ -98,17 +98,17 @@ def renren_login(request):
         name = response["name"]
         avatar = response["tinyurl"]
 
-        try:
-            user = User.objects.get(username=user_id)
-        except User.DoesNotExist:
-            user = User.objects.create_user(user_id, '%s@renren.com' % user_id, access_token)
+        user, user_created = User.objects.get_or_create(username=user_id)
 
-            profile = Profile()
-            profile.user = user
-            profile.name = name
-            profile.avatar = avatar
-            profile.access_token = access_token
-            profile.save()
+        if user_created:
+            user.email = '%s@renren.com'
+
+        user.set_password(access_token)
+        user.save()
+
+        profile, profile_created = Profile.objects.get_or_create(user=user, name=name, avatar=avatar)
+        profile.access_token = access_token
+        profile.save()
 
         # Authenticate the user and log them in using Django's pre-built
         # functions for these things.
