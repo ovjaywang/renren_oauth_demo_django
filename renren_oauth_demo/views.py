@@ -67,9 +67,6 @@ def renren_login(request):
         args = dict(error=args)
         return render_to_response('error.html', args)
     elif verification_code:
-        scope = request.GET.get("scope", None)
-        scope_array = str(scope).split("[\\s,+]")
-        response_state = request.GET.get("state", None)
         args["client_secret"] = settings.RENREN_APP_SECRET_KEY
         args["code"] = verification_code
         args["grant_type"] = "authorization_code"
@@ -113,7 +110,6 @@ def renren_login(request):
     else:
         args["response_type"] = "code"
         args["scope"] = "publish_feed email status_update"
-        args["state"] = "1 23 abc&?|."
         return HttpResponseRedirect(RENREN_AUTHORIZATION_URI + "?" + urllib.urlencode(args))
 
 
