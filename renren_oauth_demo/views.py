@@ -1,9 +1,10 @@
 # -*- Encoding: utf-8 -*-
 
-import hashlib
 import time
 import urllib
+import hashlib
 
+from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.utils import simplejson as json
@@ -45,7 +46,6 @@ modify the root domain.  e.g. If you specify the redirect_uri as
 
 RENREN_AUTHORIZATION_URI = "http://graph.renren.com/oauth/authorize"
 RENREN_ACCESS_TOKEN_URI = "http://graph.renren.com/oauth/token"
-RENREN_SESSION_KEY_URI = "http://graph.renren.com/renren_api/session_key"
 RENREN_API_SERVER = "http://api.renren.com/restserver.do"
 
 
@@ -73,14 +73,9 @@ def renren_login(request):
         response = urllib.urlopen(RENREN_ACCESS_TOKEN_URI + "?" + urllib.urlencode(args)).read()
         access_token = json.loads(response)["access_token"]
 
-        # Obtain session key
-        session_key_request_args = {"oauth_token": access_token}
-        response = urllib.urlopen(RENREN_SESSION_KEY_URI + "?" + urllib.urlencode(session_key_request_args)).read()
-        session_key = str(json.loads(response)["renren_token"]["session_key"])
-
         # Obtain the user's base info
-        params = {"method": "users.getInfo", "fields": "name,tinyurl"}
-        api_client = RenRenAPIClient(session_key, settings.RENREN_APP_API_KEY, settings.RENREN_APP_SECRET_KEY)
+        params = {"method": "users.getInfo", "fields": "name, tinyurl"}
+        api_client = RenRenAPIClient(access_token, settings.RENREN_APP_SECRET_KEY)
         response = api_client.request(params)
 
         if type(response) is list:
@@ -121,32 +116,26 @@ def renren_logout(request):
 
 @login_required
 def new_status(request):
-    # Obtain session key
-    session_key_request_args = {"oauth_token": request.user.get_profile().access_token}
-    response = urllib.urlopen(RENREN_SESSION_KEY_URI + "?" + urllib.urlencode(session_key_request_args)).read()
-    session_key = str(json.loads(response)["renren_token"]["session_key"])
-
     # Post a status
     params = {"method": "status.set", "status": smart_str(u"OAuth 2.0 脚本发布测试.")}
-    api_client = RenRenAPIClient(session_key, settings.RENREN_APP_API_KEY, settings.RENREN_APP_SECRET_KEY)
+    access_token = request.user.get_profile().access_token
+    api_client = RenRenAPIClient(access_token, settings.RENREN_APP_SECRET_KEY)
     response = api_client.request(params)
 
-    return HttpResponse(response)
+    return HttpResponse(json.dumps(response))
 
 
 class RenRenAPIClient(object):
-    def __init__(self, session_key=None, api_key=None, secret_key=None):
-        self.session_key = session_key
-        self.api_key = api_key
+    def __init__(self, access_token=None, secret_key=None):
+        self.access_token = access_token
         self.secret_key = secret_key
 
     def request(self, params=None):
         """Request Renren API server with the given params.
         """
-        params["api_key"] = self.api_key
+        params["access_token"] = self.access_token
         params["call_id"] = str(int(time.time() * 1000))
         params["format"] = "json"
-        params["session_key"] = self.session_key
         params["v"] = '1.0'
         sig = self.hash_params(params)
         params["sig"] = sig
@@ -160,7 +149,7 @@ class RenRenAPIClient(object):
             response = json.loads(s)
         finally:
             fileobj.close()
-        if type(response) is not list and response["error_code"]:
+        if "error_code" in response:
             raise RenRenAPIError(response["error_code"], response["error_msg"])
         return response
 
