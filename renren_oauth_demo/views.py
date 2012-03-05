@@ -125,6 +125,22 @@ def new_status(request):
     return HttpResponse(json.dumps(response))
 
 
+@login_required
+def publish_feed(request):
+    params = {"method": "feed.publishFeed", "name": smart_str(u"名字"),
+              "description": smart_str(u"描述"), "url": "http://www.codoon.com/",
+              "image": "http://img2.codoon.com/dao9ZRosWY_0.png",
+              "caption": smart_str(u"副标题"), "action_name": smart_str(u"动作模块文案"),
+              "action_link": "http://www.codoon.com/data_v/",
+              "message": smart_str(u"自定义内容")}
+
+    access_token = request.user.get_profile().access_token
+    api_client = RenRenAPIClient(access_token, settings.RENREN_APP_SECRET_KEY)
+    response = api_client.request(params)
+
+    return HttpResponse(json.dumps(response))
+
+
 class RenRenAPIClient(object):
     def __init__(self, access_token=None, secret_key=None):
         self.access_token = access_token

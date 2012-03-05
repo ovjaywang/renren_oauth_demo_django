@@ -10,6 +10,7 @@ urlpatterns = patterns('',
     url(r'^logout/?$', 'renren_oauth_demo.views.renren_logout', name='logout'),
 
     url(r'^status/new$', 'renren_oauth_demo.views.new_status', name='new_status'),
+    url(r'^feed/new$', 'renren_oauth_demo.views.publish_feed', name='publish_feed'),
 
     # url(r'^renren_oauth_demo/', include('renren_oauth_demo.foo.urls')),
 

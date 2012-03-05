@@ -1,23 +1,25 @@
 <!DOCTYPE html>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <title>RenRen OAuth Example</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>RenRen OAuth Example</title>
 
-  {% if user.is_authenticated %}
-  <p>
-      <a target="_blank" href="http://www.renren.com/profile?id={{ user.username }}"><img src="{{user.get_profile.avatar }}" alt="首页" /></a>
-  </p>
-  <p>
-      You are logged in as <a target="_blank" href="http://www.renren.com/profile?id={{ user.username }}">{{ user.get_profile.name }}</a>
-  </p>
-  <p>
-      <a href="/logout">Log out</a>
-  </p>
-  {% else %}
-  <p>
-      You are not yet logged into this site.
-  </p>
-  <p>
-      <a href="/login">Log in with RenRen</a>
-  </p>
-  {% endif %}
+{% if user.is_authenticated %}
+<p>
+  <a target="_blank" href="http://www.renren.com/profile?id={{ user.username }}"><img src="{{user.get_profile.avatar }}" alt="首页" /></a>
+</p>
+<p>
+  You are logged in as <a target="_blank" href="http://www.renren.com/profile?id={{ user.username }}">{{ user.get_profile.name }}</a>
+</p>
+<p>
+  <a href="/status/new">New Status</a>
+  <a href="/feed/new">Publish Feed</a>
+  <a href="/logout">Log out</a>
+</p>
+{% else %}
+<p>
+  You are not yet logged into this site.
+</p>
+<p>
+  <a href="/login">Log in with RenRen</a>
+</p>
+{% endif %}
 </html>
