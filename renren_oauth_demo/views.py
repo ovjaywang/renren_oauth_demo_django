@@ -1,13 +1,8 @@
 # -*- Encoding: utf-8 -*-
 
-import base64
-import Cookie
-import email
 import hashlib
-import hmac
 import time
 import urllib
-from functools import wraps
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
@@ -94,14 +89,14 @@ def renren_login(request):
         if type(response) is list:
             response = response[0]
 
-        user_id = response["uid"]
+        uid = response["uid"]
         name = response["name"]
         avatar = response["tinyurl"]
 
-        user, user_created = User.objects.get_or_create(username=user_id)
+        user, user_created = User.objects.get_or_create(username=uid)
 
         if user_created:
-            user.email = '%s@renren.com'
+            user.email = '%s@renren.com' % uid
 
         user.set_password(access_token)
         user.save()
@@ -112,7 +107,7 @@ def renren_login(request):
 
         # Authenticate the user and log them in using Django's pre-built
         # functions for these things.
-        user = authenticate(username=user_id, password=access_token)
+        user = authenticate(username=uid, password=access_token)
         login(request, user)
         return HttpResponseRedirect('/')
     else:
